@@ -1,0 +1,49 @@
+version: '3.9'
+
+services:
+
+  # ─────────────────────────────────────────────────────────────────
+  # PostgreSQL 16 — our primary database
+  # ─────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine          # Alpine = smaller image (~50 MB vs ~300 MB)
+    container_name: metavault-postgres
+    environment:
+      POSTGRES_DB: metavault           # database name auto-created on first start
+      POSTGRES_USER: metavault         # DB username
+      POSTGRES_PASSWORD: metavault123  # DB password (fine for local dev)
+    ports:
+      - "5432:5432"                    # host:container — exposes Postgres on localhost:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # named volume = data survives container restarts
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U metavault -d metavault"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────────────────────────
+  # Spring Boot App
+  # ─────────────────────────────────────────────────────────────────
+  app:
+    build:
+      context: .                       # look for Dockerfile in current directory
+      dockerfile: Dockerfile
+    container_name: metavault-app
+    ports:
+      - "8080:8080"                    # expose app on localhost:8080
+    environment:
+      # These env vars override the defaults in application.yml
+      DB_URL: jdbc:postgresql://postgres:5432/metavault
+      DB_USER: metavault
+      DB_PASS: metavault123
+      JWT_SECRET: "your-256-bit-secret-key-change-this-in-production-please"
+      SPRING_PROFILES_ACTIVE: dev
+    depends_on:
+      postgres:
+        condition: service_healthy     # wait until Postgres passes its healthcheck
+    restart: unless-stopped
+
+# Named volumes — Docker manages these; data persists between `docker-compose down` / `up`
+volumes:
+  postgres_data:

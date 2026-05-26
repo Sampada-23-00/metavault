@@ -1,0 +1,117 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Spring Boot configuration uses YAML (application.yml).
+# YAML uses indentation (2 spaces) to represent nested structure.
+# The ${VAR:default} syntax reads an environment variable, falling back
+# to the default value if the variable isn't set.
+# ─────────────────────────────────────────────────────────────────────────────
+
+spring:
+  application:
+    name: metavault
+
+  # ── Database ──────────────────────────────────────────────────────────────
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/metavault}
+    username: ${DB_USER:metavault}
+    password: ${DB_PASS:metavault123}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      # HikariCP is Spring Boot's default connection pool.
+      # These settings mean: keep 5 connections always ready,
+      # allow up to 20 at peak.
+      minimum-idle: 5
+      maximum-pool-size: 20
+      connection-timeout: 30000   # ms — how long to wait for a connection from the pool
+      idle-timeout: 600000        # ms — remove idle connections after 10 min
+
+  # ── JPA / Hibernate ───────────────────────────────────────────────────────
+  jpa:
+    # `update` = Hibernate reads your @Entity classes and alters the DB schema
+    # to match (add columns, create tables). Safe for dev. Use Flyway migrations in prod.
+    hibernate:
+      ddl-auto: update
+    # Show the SQL Hibernate generates — useful for debugging in dev
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        # Store UUIDs as proper UUID type in Postgres, not as strings
+        jdbc:
+          time_zone: UTC
+
+  # ── Jackson (JSON serializer) ─────────────────────────────────────────────
+  jackson:
+    # Serialize Java time types (LocalDateTime, Instant) as ISO-8601 strings
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: non_null   # omit null fields from responses
+
+# ── Server ────────────────────────────────────────────────────────────────────
+server:
+  port: ${PORT:8080}
+  servlet:
+    context-path: /               # API root is at /
+  error:
+    include-message: always       # include error messages in error responses
+    include-binding-errors: always
+
+# ── JWT ───────────────────────────────────────────────────────────────────────
+jwt:
+  # In production, set JWT_SECRET as an environment variable with a strong 256-bit key.
+  # This default is fine for local development only.
+  secret: ${JWT_SECRET:bXktc3VwZXItc2VjcmV0LWp3dC1rZXktdGhhdC1pcy1sb25nLWVub3VnaC1mb3ItSFMyNTY=}
+  expiration: 86400000    # 24 hours in milliseconds (24 * 60 * 60 * 1000)
+
+# ── SpringDoc / Swagger UI ────────────────────────────────────────────────────
+springdoc:
+  api-docs:
+    path: /api-docs              # raw OpenAPI JSON at /api-docs
+  swagger-ui:
+    path: /swagger-ui.html       # interactive UI at /swagger-ui.html
+    operationsSorter: method     # sort endpoints by HTTP method
+    tagsSorter: alpha            # sort tags alphabetically
+  show-actuator: false
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging:
+  level:
+    root: INFO
+    com.sampada.metavault: DEBUG          # our code logs at DEBUG level
+    org.springframework.security: INFO
+    org.hibernate.SQL: INFO               # show SQL only at INFO in base config
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+---
+# ── DEV PROFILE ───────────────────────────────────────────────────────────────
+# Activated when SPRING_PROFILES_ACTIVE=dev (set in docker-compose.yml)
+spring:
+  config:
+    activate:
+      on-profile: dev
+  jpa:
+    show-sql: true      # show SQL in dev
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE   # shows parameter values in SQL
+
+---
+# ── PROD PROFILE ──────────────────────────────────────────────────────────────
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    hibernate:
+      ddl-auto: validate    # in prod: don't auto-alter schema, just validate it matches entities
+
+logging:
+  level:
+    root: WARN
+    com.sampada.metavault: INFO

@@ -1,0 +1,33 @@
+# Maven
+target/
+*.class
+*.jar
+*.war
+
+# IDE files
+.idea/
+*.iml
+.eclipse
+.project
+.classpath
+.settings/
+*.suo
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment / secrets — NEVER commit these
+.env
+*.env.local
+
+# Logs
+*.log
+logs/
+
+# Spring Boot DevTools
+.mvn/wrapper/maven-wrapper.jar
+
+# Docker
+docker-data/
