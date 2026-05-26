@@ -39,6 +39,8 @@ PostgreSQL
 - Compare JSON diffs
 - Audit activity tracking
 
+
+
 Swagger UI
 
 http://localhost:8080/swagger-ui/index.html
@@ -52,4 +54,8 @@ http://localhost:8080/swagger-ui/index.html
 <img width="901" height="867" alt="111" src="https://github.com/user-attachments/assets/3e329b9c-409a-4517-abfa-8b147bdd5ee6" />
 
 <img width="898" height="814" alt="222" src="https://github.com/user-attachments/assets/610bbda6-0e35-407c-a635-fb573b30f035" />
+
+```bash
+docker-compose up
+mvn spring-boot:run
 
